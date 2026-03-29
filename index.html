@@ -1,0 +1,784 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>苗床排水系統管材計算器</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    background: #f0f4f8;
+    min-height: 100vh;
+    padding: 24px 16px;
+    color: #1a2332;
+  }
+
+  .container {
+    max-width: 860px;
+    margin: 0 auto;
+  }
+
+  /* ── Header ── */
+  .header {
+    background: linear-gradient(135deg, #1e4d8c 0%, #2e7d32 100%);
+    border-radius: 16px;
+    padding: 28px 32px;
+    margin-bottom: 24px;
+    color: white;
+  }
+  .header h1 {
+    font-size: 1.6rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+  }
+  .header p {
+    font-size: 0.88rem;
+    opacity: 0.85;
+    margin-top: 6px;
+  }
+
+  /* ── Control Panel ── */
+  .control-panel {
+    background: white;
+    border-radius: 14px;
+    padding: 24px 28px;
+    margin-bottom: 24px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    align-items: flex-end;
+  }
+  .control-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex: 1;
+    min-width: 160px;
+  }
+  .control-group label {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: #546e7a;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+  }
+  .control-group select {
+    appearance: none;
+    -webkit-appearance: none;
+    background: #f5f9ff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%231e4d8c' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right 14px center;
+    border: 2px solid #c8daf5;
+    border-radius: 10px;
+    padding: 12px 40px 12px 16px;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #1a2332;
+    cursor: pointer;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .control-group select:focus {
+    outline: none;
+    border-color: #1e4d8c;
+    box-shadow: 0 0 0 3px rgba(30,77,140,0.12);
+  }
+
+  .btn-calc {
+    background: linear-gradient(135deg, #2e7d32, #43a047);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    padding: 13px 28px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: transform 0.15s, box-shadow 0.15s;
+    white-space: nowrap;
+  }
+  .btn-calc:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(46,125,50,0.3);
+  }
+  .btn-calc:active { transform: translateY(0); }
+
+  .btn-pdf {
+    background: linear-gradient(135deg, #1e4d8c, #1565c0);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    padding: 13px 28px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: transform 0.15s, box-shadow 0.15s;
+    white-space: nowrap;
+  }
+  .btn-pdf:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(30,77,140,0.3);
+  }
+  .btn-pdf:active { transform: translateY(0); }
+
+  /* ── Result Area ── */
+  #result {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  /* ── Diagram Card ── */
+  .diagram-card {
+    background: white;
+    border-radius: 14px;
+    padding: 24px 28px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+  }
+  .card-title {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #1e4d8c;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .card-title::before {
+    content: '';
+    display: inline-block;
+    width: 4px;
+    height: 16px;
+    background: #1e4d8c;
+    border-radius: 2px;
+  }
+
+  .diagram-scroll {
+    overflow-x: auto;
+    padding-bottom: 8px;
+  }
+  .diagram {
+    display: flex;
+    align-items: center;
+    min-width: max-content;
+    padding: 16px 0;
+    gap: 0;
+  }
+
+  .node {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+  .node-shape {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: white;
+    position: relative;
+    z-index: 1;
+  }
+  .node-el   { background: #1e4d8c; }
+  .node-t    { background: #2e7d32; }
+  .node-num  {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #37474f;
+  }
+  .node-label {
+    font-size: 0.65rem;
+    color: #78909c;
+    text-align: center;
+    max-width: 70px;
+    line-height: 1.3;
+  }
+  .node-drain {
+    font-size: 0.68rem;
+    color: #1e4d8c;
+    font-weight: 600;
+  }
+
+  .pipe-seg {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+  }
+  .pipe-line {
+    height: 4px;
+    background: linear-gradient(90deg, #90a4ae, #b0bec5);
+    border-radius: 2px;
+    position: relative;
+  }
+  .pipe-line.long-pipe {
+    background: linear-gradient(90deg, #1e4d8c, #42a5f5);
+  }
+  .pipe-label {
+    font-size: 0.64rem;
+    color: #546e7a;
+    font-weight: 600;
+    white-space: nowrap;
+    text-align: center;
+    line-height: 1.4;
+  }
+
+  /* ── Tables ── */
+  .table-card {
+    background: white;
+    border-radius: 14px;
+    padding: 24px 28px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.88rem;
+  }
+  thead tr {
+    background: #1e4d8c;
+    color: white;
+  }
+  thead th {
+    padding: 12px 14px;
+    text-align: left;
+    font-weight: 600;
+    font-size: 0.8rem;
+    letter-spacing: 0.3px;
+  }
+  tbody tr:nth-child(even) { background: #f5f9ff; }
+  tbody tr:hover { background: #e8f0fe; }
+  tbody td {
+    padding: 11px 14px;
+    border-bottom: 1px solid #eceff1;
+    vertical-align: middle;
+  }
+  .td-num {
+    font-weight: 700;
+    color: #1a2332;
+    text-align: center;
+  }
+  .td-total {
+    font-weight: 700;
+    color: #2e7d32;
+    text-align: center;
+    font-size: 1rem;
+  }
+  .badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 0.72rem;
+    font-weight: 600;
+  }
+  .badge-pipe   { background: #e3f2fd; color: #1565c0; }
+  .badge-fit    { background: #e8f5e9; color: #2e7d32; }
+  .badge-strap  { background: #fff3e0; color: #e65100; }
+
+  /* ── Position Table ── */
+  .pos-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: white;
+    flex-shrink: 0;
+  }
+  .pos-el { background: #1e4d8c; }
+  .pos-t  { background: #2e7d32; }
+
+  /* ── Summary Box ── */
+  .summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 12px;
+    margin-top: 4px;
+  }
+  .summary-item {
+    background: #f5f9ff;
+    border: 1.5px solid #c8daf5;
+    border-radius: 10px;
+    padding: 14px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .summary-item .s-label {
+    font-size: 0.72rem;
+    color: #546e7a;
+    font-weight: 600;
+  }
+  .summary-item .s-value {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: #1e4d8c;
+  }
+  .summary-item .s-unit {
+    font-size: 0.72rem;
+    color: #90a4ae;
+  }
+
+  /* ── Footer Note ── */
+  .note {
+    background: #fffde7;
+    border-left: 4px solid #ffc107;
+    border-radius: 0 10px 10px 0;
+    padding: 14px 18px;
+    font-size: 0.82rem;
+    color: #5d4037;
+    line-height: 1.7;
+  }
+
+  /* ── PDF print overrides ── */
+  @media print {
+    body { background: white; padding: 0; }
+    .control-panel, .btn-pdf { display: none !important; }
+    .diagram-card, .table-card { box-shadow: none; border: 1px solid #ddd; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- Header -->
+  <div class="header">
+    <h1>🌱 苗床排水系統管材計算器</h1>
+    <p>4×8 ft 苗盤串聯 · 1" PVC 排水管 · 自動計算明細清單</p>
+  </div>
+
+  <!-- Controls -->
+  <div class="control-panel">
+    <div class="control-group">
+      <label>苗床數量（每行）</label>
+      <select id="sel-beds">
+        <option value="3">3 個苗床（24 ft）</option>
+        <option value="4">4 個苗床（32 ft）</option>
+        <option value="5" selected>5 個苗床（40 ft）</option>
+        <option value="6">6 個苗床（48 ft）</option>
+        <option value="7">7 個苗床（56 ft）</option>
+        <option value="8">8 個苗床（64 ft）</option>
+        <option value="9">9 個苗床（72 ft）</option>
+        <option value="10">10 個苗床（80 ft）</option>
+      </select>
+    </div>
+    <div class="control-group">
+      <label>層數</label>
+      <select id="sel-tiers">
+        <option value="1" selected>1 層</option>
+        <option value="2">2 層</option>
+        <option value="3">3 層</option>
+        <option value="4">4 層</option>
+      </select>
+    </div>
+    <div class="control-group">
+      <label>組數（並排行數）</label>
+      <select id="sel-rows">
+        <option value="1" selected>1 組</option>
+        <option value="2">2 組</option>
+        <option value="3">3 組</option>
+        <option value="4">4 組</option>
+        <option value="5">5 組</option>
+        <option value="6">6 組</option>
+        <option value="7">7 組</option>
+        <option value="8">8 組</option>
+        <option value="9">9 組</option>
+        <option value="10">10 組</option>
+        <option value="11">11 組</option>
+        <option value="12">12 組</option>
+        <option value="13">13 組</option>
+        <option value="14">14 組</option>
+        <option value="15">15 組</option>
+        <option value="16">16 組</option>
+        <option value="17">17 組</option>
+        <option value="18">18 組</option>
+        <option value="19">19 組</option>
+        <option value="20">20 組</option>
+      </select>
+    </div>
+    <button class="btn-calc" onclick="render()">
+      ▶ 立即計算
+    </button>
+    <button class="btn-pdf" onclick="savePDF()">
+      ⬇ 儲存 PDF
+    </button>
+  </div>
+
+  <!-- Result -->
+  <div id="result"></div>
+
+</div>
+
+<script>
+// ── 核心計算邏輯 ──────────────────────────────────────────────────────────
+// 排水口距苗床端頭約 6.5"（取中值）
+// 接頭插入深度忽略不計（現場微調）
+// 苗床單元長度：96"（8ft）
+
+const UNIT = 96;   // 每個苗床長度（英寸）
+const OFFSET = 7;  // 排水口距接縫（英寸）
+
+// 單行（n個苗床）的管段計算
+// 點位編號：1(EL) 2(T) 3(T) ... n(T) n+1(EL)
+// 奇數段（1-2, 3-4, 5-6...）= 短管
+// 偶數段（2-3, 4-5...）= 長管（需10'管+Coupling+余料）
+
+function calcSegments(n) {
+  // 段序列：共n段（n個點位間隔）
+  // 點位i的位置（從左端量起）：
+  //   位置1(EL) = OFFSET（7"）
+  //   位置k(T, k=2..n) = (k-1)*UNIT - OFFSET（每個苗床右端）
+  //   位置n+1(EL) = 位置n + 短管長
+  //
+  // 實際設計採用固定管材規格，不做精確定位計算，
+  // 遵循原始已驗證清單的分配規則：
+  //   - 奇數段（1→2, 3→4, 5→6...）使用 11.5" 短管
+  //   - 偶數段（2→3, 4→5...）使用 10' + Coupling + 余料管
+  //     其中余料管交替使用 59.5"（第1、3、5...個偶數段）
+  //                       和 58"（第2、4、6...個偶數段）
+  //   - 最後一段（n→n+1，即倒數第一段）固定使用 19"
+  //     無論奇偶，強制用19"（表示靠近末端，節省strap）
+
+  const segments = [];
+  const totalSegs = n; // 共n個間隔（n+1個點位）
+
+  let evenCount = 0; // 偶數段計數器
+
+  for (let i = 1; i <= totalSegs; i++) {
+    const isLast = (i === totalSegs);
+
+    if (isLast) {
+      // 最後一段固定 19"
+      segments.push({ from: i, to: i+1, type: 'short', pipes: ['19"'], label: '19"' });
+    } else if (i % 2 === 1) {
+      // 奇數段：11.5" 短管
+      segments.push({ from: i, to: i+1, type: 'short', pipes: ['11.5"'], label: '11.5"' });
+    } else {
+      // 偶數段：長管組合
+      evenCount++;
+      const yuliao = (evenCount % 2 === 1) ? '59.5"' : '58"';
+      segments.push({
+        from: i, to: i+1, type: 'long',
+        pipes: ["10'", 'Coupling', yuliao],
+        label: `10' + COP + ${yuliao}`
+      });
+    }
+  }
+  return segments;
+}
+
+function calcMaterials(n) {
+  const segs = calcSegments(n);
+  let elbow = 2;
+  let tee = n - 1;
+  let coupling = 0;
+  let pipe_115 = 0;
+  let pipe_595 = 0;
+  let pipe_58 = 0;
+  let pipe_10ft = 0;
+  let pipe_19 = 0;
+  let strap = n;
+
+  segs.forEach(s => {
+    s.pipes.forEach(p => {
+      if (p === "11.5\"") pipe_115++;
+      else if (p === "59.5\"") pipe_595++;
+      else if (p === "58\"") pipe_58++;
+      else if (p === "10'") pipe_10ft++;
+      else if (p === "19\"") pipe_19++;
+      else if (p === "Coupling") coupling++;
+    });
+  });
+
+  return { elbow, tee, coupling, pipe_115, pipe_595, pipe_58, pipe_10ft, pipe_19, strap };
+}
+
+// ── 渲染函數 ──────────────────────────────────────────────────────────────
+
+function render() {
+  const n = parseInt(document.getElementById('sel-beds').value);
+  const tiers = parseInt(document.getElementById('sel-tiers').value);
+  const rows = parseInt(document.getElementById('sel-rows').value);
+  const multiplier = tiers * rows;
+
+  const segs = calcSegments(n);
+  const mat = calcMaterials(n);
+
+  // 點位描述
+  const nodes = [];
+  nodes.push({ id: 1, type: 'EL', label: 'Elbow', drain: '苗床1排水' });
+  for (let i = 2; i <= n; i++) {
+    nodes.push({ id: i, type: 'T', label: 'T頭', drain: `苗床${i}排水` });
+  }
+  nodes.push({ id: n+1, type: 'EL', label: 'Elbow', drain: '接總下水道' });
+
+  // ── 示意圖 ──
+  let diagramHTML = `<div class="diagram-card">
+    <div class="card-title">管道佈局示意圖</div>
+    <div class="diagram-scroll"><div class="diagram">`;
+
+  nodes.forEach((node, idx) => {
+    const shapeClass = node.type === 'EL' ? 'node-el' : 'node-t';
+    diagramHTML += `<div class="node">
+      <div class="node-shape ${shapeClass}">${node.type}</div>
+      <div class="node-num">${node.id}號</div>
+      <div class="node-label">${node.label}</div>
+      <div class="node-drain">${node.drain}</div>
+    </div>`;
+    if (idx < segs.length) {
+      const seg = segs[idx];
+      const pipeWidth = seg.type === 'long' ? 120 : 60;
+      const lineClass = seg.type === 'long' ? 'pipe-line long-pipe' : 'pipe-line';
+      diagramHTML += `<div class="pipe-seg">
+        <div class="${lineClass}" style="width:${pipeWidth}px"></div>
+        <div class="pipe-label">${seg.label}</div>
+      </div>`;
+    }
+  });
+
+  diagramHTML += `</div></div></div>`;
+
+  // ── 點位位置表 ──
+  let posHTML = `<div class="table-card">
+    <div class="card-title">點位安裝位置（從左端量起）</div>
+    <table>
+      <thead><tr>
+        <th>點位</th><th>接頭類型</th><th>對應苗床</th>
+        <th>距左端（英寸）</th><th>距左端（英尺）</th><th>備註</th>
+      </tr></thead><tbody>`;
+
+  // 計算每個點位的累計距離
+  // 位置1: OFFSET (7")
+  // 位置k (k≥2): 前一個點位 + 該段管長
+  // 段長對應：11.5" = 11.5, 10'+COP+59.5" ≈ 120+59.5=179.5, 10'+COP+58" ≈ 178, 19" = 19
+  function segLength(seg) {
+    let total = 0;
+    seg.pipes.forEach(p => {
+      if (p === "11.5\"") total += 11.5;
+      else if (p === "59.5\"") total += 59.5;
+      else if (p === "58\"") total += 58;
+      else if (p === "10'") total += 120;
+      else if (p === "19\"") total += 19;
+      // Coupling 插入長度約 1"，忽略或視為現場微調
+    });
+    return total;
+  }
+
+  const positions = [OFFSET];
+  segs.forEach(seg => {
+    positions.push(positions[positions.length-1] + segLength(seg));
+  });
+
+  nodes.forEach((node, idx) => {
+    const pos = positions[idx];
+    const posFt = (pos / 12).toFixed(2);
+    const badgeClass = node.type === 'EL' ? 'pos-el' : 'pos-t';
+    const isLast = idx === nodes.length - 1;
+    posHTML += `<tr>
+      <td><span class="pos-badge ${badgeClass}">${node.id}</span></td>
+      <td><strong>${node.type === 'EL' ? 'Elbow（彎頭）' : 'T-Tee（三通）'}</strong></td>
+      <td>${isLast ? '—' : `苗床 ${idx+1}`}</td>
+      <td class="td-num">${pos}"</td>
+      <td class="td-num">${posFt} ft</td>
+      <td style="font-size:0.8rem;color:#78909c">${isLast ? '接總排水管' : node.drain}</td>
+    </tr>`;
+  });
+  posHTML += `</tbody></table></div>`;
+
+  // ── 管道切割清單（單行）──
+  let cutHTML = `<div class="table-card">
+    <div class="card-title">管道切割清單（單行 ${n} 個苗床）</div>
+    <table>
+      <thead><tr>
+        <th>#</th><th>管段</th><th>管材</th><th>長度</th><th>數量</th><th>備註</th>
+      </tr></thead><tbody>`;
+
+  let cutIdx = 1;
+  segs.forEach(seg => {
+    seg.pipes.forEach(p => {
+      if (p === 'Coupling') return; // Coupling 放到管件表
+      const len = p === "10'" ? "120\"（10 ft）" :
+                  p === "11.5\"" ? "11.5\"" :
+                  p === "59.5\"" ? "59.5\"" :
+                  p === "58\"" ? "58\"" : "19\"";
+      const note = p === "10'" ? "市售標準長度，無需切割" :
+                   p === "11.5\"" || p === "19\"" ? "從10ft管現場切割" : "從10ft管現場切割";
+      cutHTML += `<tr>
+        <td class="td-num">${cutIdx++}</td>
+        <td>${seg.from}號 → ${seg.to}號</td>
+        <td><span class="badge badge-pipe">PVC 管 1"</span></td>
+        <td class="td-num">${len}</td>
+        <td class="td-num">1</td>
+        <td style="font-size:0.8rem;color:#78909c">${note}</td>
+      </tr>`;
+    });
+  });
+  cutHTML += `</tbody></table></div>`;
+
+  // ── 管件清單（單行）──
+  const fittingRows = [
+    { name: 'Elbow 彎頭 90°', spec: '1"', type: 'badge-fit', qty: mat.elbow, unit: '個', note: '首尾各1個' },
+    { name: 'T-Tee 三通',     spec: '1"', type: 'badge-fit', qty: mat.tee,   unit: '個', note: '中間點位' },
+    { name: 'Coupling 直接頭',spec: '1"', type: 'badge-fit', qty: mat.coupling, unit: '個', note: '長管中段連接' },
+    { name: '鍍鋅管夾',       spec: '1"', type: 'badge-strap', qty: mat.strap, unit: '個', note: '每出水點位1個' },
+  ];
+
+  let fitHTML = `<div class="table-card">
+    <div class="card-title">管件清單（單行）</div>
+    <table>
+      <thead><tr>
+        <th>#</th><th>零件名稱</th><th>規格</th><th>單行數量</th><th>備註</th>
+      </tr></thead><tbody>`;
+  fittingRows.forEach((r, i) => {
+    fitHTML += `<tr>
+      <td class="td-num">${i+1}</td>
+      <td><strong>${r.name}</strong></td>
+      <td><span class="badge ${r.type}">${r.spec}</span></td>
+      <td class="td-num">${r.qty}</td>
+      <td style="font-size:0.8rem;color:#78909c">${r.note}</td>
+    </tr>`;
+  });
+  fitHTML += `</tbody></table></div>`;
+
+  // ── 總採購清單 ──
+  const totalItems = [
+    { name: 'Elbow 彎頭 90°',  spec: '1"',  cat: 'badge-fit',   single: mat.elbow,    total: mat.elbow * multiplier,    unit: '個' },
+    { name: 'T-Tee 三通',      spec: '1"',  cat: 'badge-fit',   single: mat.tee,      total: mat.tee * multiplier,      unit: '個' },
+    { name: 'Coupling 直接頭', spec: '1"',  cat: 'badge-fit',   single: mat.coupling, total: mat.coupling * multiplier, unit: '個' },
+    { name: 'PVC管 11.5"',     spec: '1"',  cat: 'badge-pipe',  single: mat.pipe_115, total: mat.pipe_115 * multiplier, unit: '條' },
+    { name: 'PVC管 59.5"',     spec: '1"',  cat: 'badge-pipe',  single: mat.pipe_595, total: mat.pipe_595 * multiplier, unit: '條' },
+    { name: 'PVC管 58"',       spec: '1"',  cat: 'badge-pipe',  single: mat.pipe_58,  total: mat.pipe_58 * multiplier,  unit: '條' },
+    { name: "PVC管 10'（標準）",spec: '1"', cat: 'badge-pipe',  single: mat.pipe_10ft,total: mat.pipe_10ft * multiplier,unit: '條' },
+    { name: 'PVC管 19"',       spec: '1"',  cat: 'badge-pipe',  single: mat.pipe_19,  total: mat.pipe_19 * multiplier,  unit: '條' },
+    { name: '鍍鋅管夾',        spec: '1"',  cat: 'badge-strap', single: mat.strap,    total: mat.strap * multiplier,    unit: '個' },
+    { name: 'PVC管 19"',       spec: '1"',  cat: 'badge-pipe',  single: mat.pipe_19,  total: mat.pipe_19 * multiplier,  unit: '條' },
+    { name: '鍍鋅管夾',        spec: '1.5"',cat: 'badge-strap', single: mat.strap,    total: mat.strap * multiplier,    unit: '個' },
+  ];
+
+  let totalHTML = `<div class="table-card">
+    <div class="card-title">總採購清單（${tiers} 層 × ${rows} 組 = ${multiplier} 行）</div>
+    <table>
+      <thead><tr>
+        <th>#</th><th>零件名稱</th><th>規格</th><th>單行用量</th>
+        <th>× ${multiplier} 行</th><th>單位</th>
+      </tr></thead><tbody>`;
+
+  totalItems.forEach((r, i) => {
+    if (r.single === 0) return;
+    totalHTML += `<tr>
+      <td class="td-num">${i+1}</td>
+      <td><strong>${r.name}</strong></td>
+      <td><span class="badge ${r.cat}">${r.spec}</span></td>
+      <td class="td-num">${r.single}</td>
+      <td class="td-total">${r.total}</td>
+      <td style="text-align:center;color:#546e7a">${r.unit}</td>
+    </tr>`;
+  });
+  totalHTML += `</tbody></table></div>`;
+
+  // ── 摘要卡片 ──
+  const summaryHTML = `<div class="table-card">
+    <div class="card-title">配置摘要</div>
+    <div class="summary-grid">
+      <div class="summary-item">
+        <span class="s-label">苗床數/行</span>
+        <span class="s-value">${n}</span>
+        <span class="s-unit">個（${n*8} ft）</span>
+      </div>
+      <div class="summary-item">
+        <span class="s-label">層數</span>
+        <span class="s-value">${tiers}</span>
+        <span class="s-unit">層</span>
+      </div>
+      <div class="summary-item">
+        <span class="s-label">組數</span>
+        <span class="s-value">${rows}</span>
+        <span class="s-unit">組（並排行）</span>
+      </div>
+      <div class="summary-item">
+        <span class="s-label">總行數</span>
+        <span class="s-value">${multiplier}</span>
+        <span class="s-unit">行（層×組）</span>
+      </div>
+      <div class="summary-item">
+        <span class="s-label">點位數/行</span>
+        <span class="s-value">${n+1}</span>
+        <span class="s-unit">個（${n} 出水 + 1 排出）</span>
+      </div>
+      <div class="summary-item">
+        <span class="s-label">PVC管總條數</span>
+        <span class="s-value">${(mat.pipe_115+mat.pipe_595+mat.pipe_58+mat.pipe_10ft+mat.pipe_19)*multiplier}</span>
+        <span class="s-unit">條</span>
+      </div>
+    </div>
+  </div>`;
+
+  // ── 注意事項 ──
+  const noteHTML = `<div class="note">
+    💡 <strong>施工說明：</strong>
+    所有管子長度均為淨長（不含接頭插入深度，現場微調約 ±0.5"）。
+    排水口距苗盤端頭約 7"。11.5" / 19" 短管建議從 10' 管現場切割，節省備料。
+    Coupling 用於長管中段連接，安裝時確認管道水平後再固定管夾。
+    <br>最終點位位置以實際苗盤擺放為準，允許現場微調。
+  </div>`;
+
+  document.getElementById('result').innerHTML =
+    summaryHTML + diagramHTML + posHTML + cutHTML + fitHTML + totalHTML + noteHTML;
+}
+
+// ── PDF 儲存 ──────────────────────────────────────────────────────────────
+function savePDF() {
+  const resultEl = document.getElementById('result');
+  if (!resultEl.innerHTML.trim()) {
+    alert('請先點擊「立即計算」產生清單，再儲存 PDF。');
+    return;
+  }
+  const n = document.getElementById('sel-beds').value;
+  const t = document.getElementById('sel-tiers').value;
+  const r = document.getElementById('sel-rows').value;
+  const filename = `苗床排水管材清單_${n}床_${t}層_${r}組.pdf`;
+
+  const element = document.getElementById('result');
+  const opt = {
+    margin: [10, 8, 10, 8],
+    filename: filename,
+    image: { type: 'jpeg', quality: 0.97 },
+    html2canvas: { scale: 2, useCORS: true, logging: false },
+    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+    pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+  };
+  html2pdf().set(opt).from(element).save();
+}
+
+// ── 事件監聽 ─────────────────────────────────────────────────────────────
+// 下拉變更時不自動計算，需點擊「立即計算」
+
+// 初始顯示提示
+document.getElementById('result').innerHTML = `
+  <div style="text-align:center;padding:48px 24px;color:#90a4ae;">
+    <div style="font-size:3rem;margin-bottom:12px;">🌱</div>
+    <div style="font-size:1.1rem;font-weight:600;color:#546e7a;">選擇參數後，點擊「立即計算」</div>
+    <div style="font-size:0.85rem;margin-top:8px;">支援苗床數 3–10 個 · 層數 1–4 · 組數 1–20</div>
+  </div>`;
+</script>
+</body>
+</html>
